@@ -1,36 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser, findUserByUsername } from "@/lib/db";
+import { createUser, findUserByUsername, findUserByEmail } from "@/lib/db";
 import bcrypt from "bcrypt";
+import { createToken, setCookie } from "@/utilities/TokenUtilities";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { username, email, password } = body;
+    const { 
+      username,
+      email,
+      name,
+      number,
+      password,
+      verifyPassword,
+     } = body;
 
-    // 1. Basic input validation
-    if (!username || !email || !password) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    // More robust validation for missing fields
+    const requiredFields = ['username', 'email', 'name', 'number', 'password', 'verifyPassword'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        const fieldName = field.charAt(0).toUpperCase() + field.slice(1).replace('Password', ' Password');
+        return NextResponse.json({ error: `${fieldName} is required` }, { status: 400 });
+      }
     }
 
-    // 2. Check if the user already exists
-    const existingUser = await findUserByUsername(username);
-    if (existingUser) {
-      return NextResponse.json({ error: "Username is already taken" }, { status: 409 }); // 409 Conflict is more appropriate
+    if (password !== verifyPassword) {
+      return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
 
-    // 3. Hash the password
+    const existingUserByUsername = await findUserByUsername(username);
+    if (existingUserByUsername) {
+      return NextResponse.json({ error: "Username is already taken" }, { status: 409 }); 
+    }
+
+    const existingUserByEmail = await findUserByEmail(email);
+    if (existingUserByEmail) {
+      return NextResponse.json({ error: "Email is already in use" }, { status: 409 });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create the new user with the hashed password
-    const user = await createUser({ username, email, password: hashedPassword });
+    const user = await createUser({
+      username,
+      email,
+      name,
+      number,
+      password: hashedPassword,
+    });
 
-    // 5. Handle potential creation errors (e.g., duplicate email)
     if (!user) {
-      return NextResponse.json({ error: "Could not create user. The email might be taken." }, { status: 409 });
+      return NextResponse.json({ error: "Could not create user due to a database error." }, { status: 500 });
     }
 
-    // 6. Return the newly created user's public data
-    return NextResponse.json({ id: user.id, username: user.username, email: user.email }, { status: 201 });
+    // Create a token with non-sensitive user data
+    const token = createToken({ id: user.id, username: user.username });
+
+    // Create a response and set the cookie
+    const response = NextResponse.json({ id: user.id, username: user.username, email: user.email }, { status: 201 });
+    setCookie(response, token);
+
+    return response;
+
   } catch (err) {
     console.error("Register error:", err);
     return NextResponse.json({ error: "Invalid JSON or server error" }, { status: 500 });

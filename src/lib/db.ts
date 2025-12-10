@@ -3,6 +3,8 @@ import { supabase } from "./supabaseClient";
 export type User = {
   id: string;
   username: string;
+  name: string;
+  number: string;
   email: string;
   password: string;
   createdAt?: string;
@@ -44,6 +46,26 @@ export async function findUserByUsername(username: string): Promise<User | null>
 
   if (error && error.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error finding user by username:", error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Finds a user in the Supabase 'users' table by their email.
+ * @param email The email to search for.
+ * @returns The user object or null if not found.
+ */
+export async function findUserByEmail(email: string): Promise<User | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error && error.code !== "PGRST116") { // PGRST116 means no rows found
+    console.error("Error finding user by email:", error);
     return null;
   }
 
