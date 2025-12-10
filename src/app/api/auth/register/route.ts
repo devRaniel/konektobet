@@ -24,6 +24,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters long" }, { status: 400 });
+    }
+    if (!/[A-Z]/.test(password)) {
+      return NextResponse.json({ error: "Password must contain at least one uppercase letter" }, { status: 400 });
+    }
+    if (!/[0-9]/.test(password)) {
+      return NextResponse.json({ error: "Password must contain at least one number" }, { status: 400 });
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return NextResponse.json({ error: "Password must contain at least one special character" }, { status: 400 });
+    }
+    const letterCount = (password.match(/[a-zA-Z]/g) || []).length;
+    if (letterCount < 3) {
+      return NextResponse.json({ error: "Password must contain at least three letters" }, { status: 400 });
+    }
+
     if (password !== verifyPassword) {
       return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
