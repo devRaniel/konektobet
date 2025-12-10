@@ -4,6 +4,7 @@ export type User = {
   id: string;
   username: string;
   name: string;
+  role: 0 | 1 | 2; // 0: admin, 1: customer, 2: clinic
   number: string;
   email: string;
   password: string;

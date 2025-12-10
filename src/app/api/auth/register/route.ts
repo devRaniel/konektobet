@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       email,
       name,
       number,
+      role: 1, // Default role for new users is 'customer'
       password: hashedPassword,
     });
 
@@ -53,10 +54,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Create a token with non-sensitive user data
-    const token = createToken({ id: user.id, username: user.username });
+    const token = createToken({ id: user.id, username: user.username, role: user.role });
 
     // Create a response and set the cookie
-    const response = NextResponse.json({ id: user.id, username: user.username, email: user.email }, { status: 201 });
+    const response = NextResponse.json({ id: user.id, username: user.username, email: user.email, role: user.role }, { status: 201 });
     setCookie(response, token);
 
     return response;

@@ -22,14 +22,14 @@ export async function POST(req: NextRequest) {
       user = await findUserByUsername(username);
     }
     if (!user) return NextResponse.json({ error: "Username or password is incorrect" }, { status: 401 });
-
+    
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 
-    const token = createToken({ id: user.id, username: user.username });
+    const token = createToken({ id: user.id, username: user.username, role: user.role });
 
     const response = NextResponse.json({
-      user: { id: user.id, username: user.username, email: user.email },
+      user: { id: user.id, username: user.username, email: user.email, role: user.role },
     });
     setCookie(response, token);
 
