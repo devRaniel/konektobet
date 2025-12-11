@@ -12,6 +12,7 @@ export type User = {
 };
 
 export type Clinic = {
+  slug: string;
   id: string;
   name: string;
   address: string;
@@ -24,6 +25,19 @@ export type Clinic = {
   created_at?: string;
 };
 
+/**
+ * Generates a random alphanumeric slug of a given length.
+ * @param length The desired length of the slug (e.g., 6).
+ * @returns A random string.
+ */
+function generateSlug(length: number): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 /**
  * Creates a new user in the Supabase 'users' table.
  * @param userData The user data to insert (e.g., username, email, hashed password).
@@ -52,21 +66,39 @@ export async function createUser(
  * @returns The newly created clinic object or null on error.
  */
 export async function createClinic(
-  clinicData: Omit<Clinic, "id" | "created_at">
+  clinicData: Omit<Clinic, "id" | "created_at" | "slug">
 ): Promise<Clinic | null> {
-  const { data, error } = await supabase
-    .from("clinics")
-    .insert(clinicData)
-    .select()
-    .single();
+  let attempts = 0;
+  const maxAttempts = 5; // Prevent infinite loops
 
-  if (error) {
-    // e.g., '23505' for unique constraint violation if user_id already has a clinic
-    console.error("Error creating clinic:", error);
-    return null;
+  while (attempts < maxAttempts) {
+    const slug = generateSlug(6);
+    const { data, error } = await supabase
+      .from("clinics")
+      .insert({ ...clinicData, slug })
+      .select()
+      .single();
+
+    if (error) {
+      // Check for unique constraint violation on the 'slug' column
+      if (error.code === "23505" && error.message.includes("slug")) {
+        console.warn(`Slug collision for '${slug}'. Retrying...`);
+        attempts++;
+      } else {
+        // A different error occurred (like a duplicate user_id), so we should stop.
+        console.error("Error creating clinic:", error);
+        return null;
+      }
+    } else {
+      // Success!
+      return data;
+    }
   }
 
-  return data;
+  console.error(
+    "Failed to create clinic after multiple slug generation attempts."
+  );
+  return null;
 }
 
 /**

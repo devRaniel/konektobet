@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       operating_hours: operating_hours || null,
       services: services || null,
       user_id: payload.id, // Securely set user_id from the token
-    });
+    } as Omit<import("@/lib/db").Clinic, "id" | "created_at" | "slug">);
 
     if (!newClinic) {
       // This could happen if the user_id already has a clinic (unique constraint violation)
