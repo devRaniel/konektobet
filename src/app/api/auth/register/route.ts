@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       name,
       number,
       password,
+      role, // New: role can be passed from the frontend
       verifyPassword,
      } = body;
 
@@ -22,6 +23,14 @@ export async function POST(req: NextRequest) {
         const fieldName = field.charAt(0).toUpperCase() + field.slice(1).replace('Password', ' Password');
         return NextResponse.json({ error: `${fieldName} is required` }, { status: 400 });
       }
+    }
+
+    // Determine and validate the role
+    const userRole = role === 2 ? 2 : 1; // Default to 'customer' if role is not explicitly 2
+
+    // Security check: Prevent anyone from registering as an admin
+    if (role === 0) {
+      return NextResponse.json({ error: "Invalid role specified." }, { status: 400 });
     }
 
     if (password.length < 8) {
@@ -62,7 +71,7 @@ export async function POST(req: NextRequest) {
       email,
       name,
       number,
-      role: 1, // Default role for new users is 'customer'
+      role: userRole, // Set role based on input or default to 1
       password: hashedPassword,
     });
 
