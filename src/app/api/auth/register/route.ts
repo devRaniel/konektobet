@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser, findUserByUsername, findUserByEmail } from "@/lib/db";
+import { getUserByEmail, getUserByUsername, createUser } from "@/lib/users/users";
 import bcrypt from "bcrypt";
 import { createToken, setCookie } from "@/utilities/TokenUtilities";
 
@@ -54,12 +54,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
 
-    const existingUserByUsername = await findUserByUsername(username);
+    const existingUserByUsername = await getUserByEmail(username);
     if (existingUserByUsername) {
       return NextResponse.json({ error: "Username is already taken" }, { status: 409 }); 
     }
 
-    const existingUserByEmail = await findUserByEmail(email);
+    const existingUserByEmail = await getUserByUsername(email);
     if (existingUserByEmail) {
       return NextResponse.json({ error: "Email is already in use" }, { status: 409 });
     }

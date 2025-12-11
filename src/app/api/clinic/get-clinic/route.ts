@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/utilities/TokenUtilities";
-import { findClinicByUserId } from "@/lib/db";
+import { findClinicByUserId } from "@/lib/clinic/clinic";
 
 export async function GET(req: NextRequest) {
   // 1. Authenticate the user by verifying the token

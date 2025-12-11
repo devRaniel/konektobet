@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findUserByUsername, findUserByEmail, User } from "@/lib/db";
+import { getUserByEmail, getUserByUsername, User} from "@/lib/users/users";
 import bcrypt from "bcrypt";
 import { createToken, setCookie } from "@/utilities/TokenUtilities";
 
@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     // Allow login with either username or email
     let user: User | null = null;
     if (username.includes('@')) {
-      user = await findUserByEmail(username);
+      user = await getUserByEmail(username);
     } else {
-      user = await findUserByUsername(username);
+      user = await getUserByUsername(username);
     }
     if (!user) return NextResponse.json({ error: "Username or password is incorrect" }, { status: 401 });
     

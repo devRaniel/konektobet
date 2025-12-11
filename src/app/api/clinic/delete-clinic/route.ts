@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/utilities/TokenUtilities";
-import { deleteClinicByUserId } from "@/lib/db";
+import { deleteClinicByUserId } from "@/lib/clinic/clinic";
 
 export async function DELETE(req: NextRequest) {
   // 1. Authenticate and authorize user
