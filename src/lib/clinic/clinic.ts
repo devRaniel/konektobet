@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { supabase } from "../supabaseClient";
 
 export type Clinic = {
@@ -74,11 +75,11 @@ export async function createClinic(
  * @param userId The ID of the user who owns the clinic.
  * @returns The clinic object or null if not found.
  */
-export async function findClinicByUserId(userId: string): Promise<Clinic | null> {
+export async function getClinic(slug: string): Promise<Clinic | null> {
   const { data, error } = await supabase
     .from("clinics")
     .select("*")
-    .eq("user_id", userId)
+    .eq("slug", slug)
     .single();
 
   if (error && error.code !== "PGRST116") {
@@ -88,6 +89,22 @@ export async function findClinicByUserId(userId: string): Promise<Clinic | null>
 
   return data;
 }
+
+export async function findClinicByUserId(userId: string): Promise<Clinic | null> {
+  const { data, error } = await supabase
+    .from("clinics")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    console.error("Error finding clinic by user ID:", error);
+    return null;
+  }
+
+  return data;
+}
+  
 
 /**
  * Retrieves all clinics from the database.
@@ -127,6 +144,42 @@ export async function updateClinicByUserId(
   }
 
   return data;
+}
+
+/**
+ * Finds a clinic by its slug and the owner's username.
+ * This assumes you have a public 'users' table with 'user_id' and 'username' columns.
+ * @param slug The slug of the clinic.
+ * @param username The username of the clinic's owner.
+ * @returns The clinic object or null if not found or on error.
+ */
+export async function getClinicBySlug(slug: string, username: string): Promise<Clinic | null> {
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id") 
+    .eq("username", username)
+    .single();
+
+  if (userError) {
+    // PGRST116: PostgREST error for "exactly one row" not found. This is expected if user doesn't exist.
+    if (userError.code !== "PGRST116") {
+      console.error("Error finding user by username:", userError);
+    }
+    return null;
+  }
+
+  const { data: clinic, error: clinicError } = await supabase
+    .from("clinics")
+    .select("*")
+    .match({ slug: slug, user_id: user.id }) // Changed from 'user.user_id' to 'user.id'
+    .single();
+
+  if (clinicError && clinicError.code !== "PGRST116") {
+    console.error("Error finding clinic by slug and user:", clinicError);
+    return null;
+  }
+
+  return clinic; // Will be null if not found, or the clinic object if found.
 }
 
 /**
